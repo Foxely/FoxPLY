@@ -1,0 +1,9 @@
+
+import "make";
+
+
+build2: var = Build("static");
+build2.SetExecutableName("print");
+build2.AddSourceFile("print.cpp", false);
+build2.AddIncludeDirectory("include");
+build2.build();

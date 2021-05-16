@@ -1,0 +1,120 @@
+
+import "os";
+import "path";
+import "module";
+
+Build :: class 
+{
+    init(type)
+    {
+        this.exeName = nil;
+        this.type = type;
+        this.sourceFiles = [];
+        this.includesDirectories = [];
+        this.objects = [];
+        this.targets = [];
+        this.targetsPath = [];
+        // this.intanstiator = os.getEnv("PWD");
+    }
+
+    AddSourceFiles(files)
+    {
+        for (i: var = 0; i < files.size(); i = i + 1)
+            this.sourceFiles.push(files[i]);
+    }
+
+    AddSourceFile(file, recursive)
+    {
+        this.sourceFiles.push(file);
+    }
+
+    AddIncludeDirectory(path)
+    {
+        this.includesDirectories.push(path);
+    }
+
+    AddTarget(targetPath, targetName)
+    {
+        module.load(targetPath + "/build");
+        this.targets.push(targetName);
+        this.targetsPath.push(targetPath);
+    }
+
+    SetExecutableName(name)
+    {
+        this.exeName = name;
+    }
+
+    CompileObject(includes, source)
+    {
+        sourceName: var = path.getFilename(source, "/");
+        sourceName = path.removeExtension(sourceName);
+        cmd: var = "g++ -I" + includes + " -c " + source + " -o " + sourceName + ".o";
+        print "cmd = %\n", cmd;
+        os.shell(cmd);
+	    print "Compiled '%'\n", source;
+        this.objects.push(sourceName + ".o");
+    }
+
+    build()
+    {
+        sourceString: var = this.sourceFiles.toString();
+        includeString: var = this.includesDirectories.toString();
+        targetString: var = "";
+
+        sourceString.replace(",", " ");
+        includeString.replace(",", " -I");
+
+        for (i: var = 0; i < this.targets.size(); i = i + 1)
+            targetString = targetString + " -L" + this.targetsPath[i] + " -l" + this.targets[i];
+
+        // print "%\n", this.exeName;
+
+        if (this.type == "static")
+        {
+            for (i: var = 0; i < this.sourceFiles.size(); i = i + 1)
+                this.CompileObject(includeString, this.sourceFiles[i]);
+            
+            objectString: var = this.objects.toString();
+            objectString.replace(",", " ");
+
+            if (this.exeName != nil)
+                os.shell("ar -rc lib" + this.exeName + ".a " + objectString);
+            else
+                print "Can't create a static library with an empty name.";            
+        }
+        else if (this.type == "shared")
+        {
+            cmd: var = "g++ ";
+
+            if (includeString.length() > 0)
+                cmd = cmd + "-I " + includeString + " ";
+            if (targetString.length() > 0)
+                cmd = cmd + targetString + " ";
+
+            cmd = cmd + "-g -fPIC -shared " + sourceString;
+
+            if (this.exeName != nil)
+                os.shell(cmd + " -o " + this.exeName + ".so");
+            else
+                print "Can't create a dynamic library with an empty name.";            
+        }
+        else if (this.type == "exe")
+        {
+            cmd: var = "g++ " + sourceString + " ";
+
+            if (includeString.length() > 0)
+                cmd = cmd + "-I " + includeString + " ";
+            if (targetString.length() > 0)
+                cmd = cmd + targetString + " ";
+            if (this.exeName.length() > 0)
+                cmd = cmd + "-o " + this.exeName + " ";
+        
+            print "cmd = %\n", cmd;
+
+            os.shell(cmd);
+        }
+    }
+}
+
+// addTarget([""]);

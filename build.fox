@@ -1,0 +1,9 @@
+
+import "make";
+
+build: var = Build("exe");
+build.SetExecutableName("main");
+build.AddSourceFile("main.cpp", false);
+build.AddIncludeDirectory("include");
+build.AddTarget("prints", "print");
+build.build();
